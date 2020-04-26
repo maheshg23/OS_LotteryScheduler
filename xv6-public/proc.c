@@ -271,18 +271,38 @@ scheduler(void)
   struct proc *p;
   int foundproc = 1;
 
+  //Lottery Schecule logic
+  int counter=0;
+  int total_tickets=0;
+  int picked_ticket=0;
+
   for(;;){
     // Enable interrupts on this processor.
     sti();
 
     if (!foundproc) hlt();
     foundproc = 0;
+    
+    //Lottery Schecule logic
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+      if(p->state == RUNNABLE)
+        total_tickets += p->tickets;
+      }
+
+    picked_ticket = random_at_most(total_tickets);
+
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
+
+      //Lottery Schecule logic
+      if((counter + p->tickets) < picked_ticket) {
+        counter += p->tickets;
+        continue;
+      }
 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
@@ -297,6 +317,7 @@ scheduler(void)
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       proc = 0;
+      break;
     }
     release(&ptable.lock);
 
